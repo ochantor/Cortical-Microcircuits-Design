@@ -2,8 +2,6 @@
 How Canonical Cortical Microcircuits Give Rise to Intelligent Behavior Without Learning
 
 
-# The Awakening of Tissue: A Theory of Intelligence Without Learning
-
 > *"Intelligence is not learning. It is the awakening of tissue that evolution has been saving for you."*
 
 ---

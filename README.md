@@ -7,6 +7,7 @@ How Canonical Cortical Microcircuits Give Rise to Intelligent Behavior Without L
 > *"Intelligence is not learning. It is the awakening of tissue that evolution has been saving for you."*
 
 ---
+![Cortical Microcircuits](Cortical%20Microcircuits.png)
 
 ## The Experiment
 

@@ -7,6 +7,11 @@ How Canonical Cortical Microcircuits Give Rise to Intelligent Behavior Without L
 > *"Intelligence is not learning. It is the awakening of tissue that evolution has been saving for you."*
 
 ---
+The most advanced biological intelligence on Earth does not look like modern artificial intelligence. It is not built from feed-forward layer upon layer of deep, gigantic, monolithic neural connections.
+
+Instead, the mammalian neocortex is an intricate, vast landscape formed by hundreds of thousands—millions—of microscopic, repeating cells that tightly cover the entire cortical surface like a vast, biological honeycomb. These are the cortical microcircuits (CM), or cortical minicolumns. First discovered and conceptualized by the pioneering neurophysiologist Vernon Mountcastle in 1957, these canonical structures represent the fundamental, modular computational units of mammalian cognition, including humans.
+
+Artificial systems typically treat the brain as a massive, deep feed-forward processor that transforms inputs into explicit behavioral representations. This repository challenges that assumption by looking directly at the raw, localized dynamics of the cortical honeycomb.
 ![Cortical Microcircuits](Cortical%20Microcircuits.png)
 
 ## The Experiment

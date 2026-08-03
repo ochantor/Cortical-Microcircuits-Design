@@ -145,7 +145,7 @@ N+1 gives you a body. N+2 gives you a project. **N+3 gives you a biography**—a
 ## Running the Experiment
 
 ```bash
-python Creature_N3_Claude.py
+python Creature_N3_OK.py
 ```
 
 ### Requirements

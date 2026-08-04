@@ -8,6 +8,8 @@ How Canonical Cortical Microcircuits Give Rise to Intelligent Behavior Without L
 
 
 > *"Intelligence is not learning. It is the awakening of tissue that evolution has been saving for you."*
+>
+> *"If nature only has CMs at its disposal to build the cortex, then everything we call learning, memory, or thought is nothing more than the modulation of the activity of those very same CMs in space-time. "*
 
 ---
 The most advanced biological intelligence on Earth does not look like modern artificial intelligence. It is not built from feed-forward layer upon layer of deep, gigantic, monolithic neural connections.

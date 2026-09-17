@@ -1,3 +1,4 @@
+# Por Oscar Chang  Ph.D.
 import matplotlib
 matplotlib.use('TkAgg')
 

@@ -15,8 +15,7 @@ The most advanced biological intelligence on Earth does not look like modern art
 
 Instead, the mammalian neocortex is an intricate, vast landscape formed by hundreds of thousands—millions—of microscopic, repeating cells that tightly cover the entire cortical surface like a vast, biological honeycomb. These are the cortical microcircuits (CM), or cortical minicolumns. First discovered and conceptualized by the pioneering neurophysiologist Vernon Mountcastle in 1957, these canonical structures represent the fundamental, modular computational units of mammalian cognition, including humans.
 
-Artificial systems typically treat the brain as a massive, deep feed-forward processor that transforms inputs into explicit behavioral representations. This repository challenges that assumption by looking directly at the raw, localized dynamics of the cortical honeycomb.
-A new AI concept built directly with mammalian cortical elements—microcircuits, cortical areas, lateral competition, temporal amygdalar asymmetry—demonstrates that a single new cortical area with hysteresis resolves long-horizon survival, revealing that the embodied bottleneck is temporal, not representational
+Artificial systems typically treat the brain as a massive, deep feed-forward processor that transforms inputs into explicit behavioral representations. This repository challenges that assumption by looking directly at the raw, localized dynamics of the cortical honeycomb. Built through a human–LLM co-design workflow and assembled directly from mammalian cortical elements—microcircuits, cortical areas, lateral competition, and amygdalar temporal asymmetry—a new AI concept demonstrates that a single additional cortical area, equipped with threat hysteresis, resolves long-horizon survival. The result reveals that the bottleneck for embodied autonomy is temporal, not representational.
 
 ![Cortical Microcircuits](Cortical%20Microcircuits.png)
 

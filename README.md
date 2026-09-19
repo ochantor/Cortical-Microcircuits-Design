@@ -6,7 +6,7 @@
 How Canonical Cortical Microcircuits Give Rise to Intelligent Behavior Without Learning
 
 
-> *"Intelligence is not learning. It is the awakening of tissue that evolution has been saving for you."*
+> *"A new AI concept built directly with mammalian cortical elements."*
 >
 > *"If nature only has CMs at its disposal to build the cortex, then everything we call learning, memory, or thought is nothing more than the modulation of the activity of those very same CMs in space-time."*
 

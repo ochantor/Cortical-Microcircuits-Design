@@ -28,8 +28,7 @@ At first, it only survives. It eats when hungry, flees from the predator, and ta
 Then, at age `0.6`, something changes. A third tissue, **N+3** (sensorimotor / nest-building), awakens. The creature that only knew how to survive now builds a nest—searching, collecting, carrying, and depositing materials until a 9-cell structure is complete. No learning. No synaptic modification. Only tissue that was preconfigured, waiting for its moment.
 
 **But something else is happening, and it is the most important part of the experiment.**
-
-Watch the predator. When it enters the creature's perceptual radius, the creature flees. That is expected. But now **watch what happens when the predator leaves the field of view.** The creature does not immediately return to foraging. It maintains evasive behavior. It acts *as if* the danger were still present. For approximately `TAU_N4` frames, a hidden variable—an internal state of alert—continues to bias the motor competition away from the predator's last known quadrant.
+it comes out as the co-work of a human and a llM. the human asks the LLM a chalenging question "How will you used an available area N+4 to improve the creature survival capacity. the work produce a solution where when the predator enters the creature's perceptual radius, the creature uses N+4 to watch what happens when the predator leaves the field of view. It maintains evasive behavior. It acts *as if* the danger were still present. For approximately `TAU_N4` frames, a hidden variable—an internal state of alert—continues to bias the motor competition away from the predator's last known quadrant.
 
 This is **N+4** (threat hysteresis): a cortical tissue found by expert human and LLM co-work. It does not merely process the present. It sustains a **state of mind**.
 

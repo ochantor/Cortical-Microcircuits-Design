@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>N+4 Cortex — Dashboard de Histéresis de Amenaza</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    --bg:#080B10;
+    --bg2:#0C1119;
+    --panel:#0F1620;
+    --panel2:#121A26;
+    --border:rgba(148,178,209,0.12);
+    --border-soft:rgba(148,178,209,0.07);
+    --text:#DCE6EF;
+    --muted:#7C8BA0;
+    --muted2:#546177;
+    --mot:#FF5C7A;
+    --nav:#45D3E8;
+    --n2:#8FE07A;
+    --n4:#FFA23D;
+    --accent:#5EEAD4;
+    --danger:#FF4557;
+    --gold:#F2C94C;
+    padding-top: env(safe-area-inset-top,0px);
+    padding-bottom: env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(69,211,232,0.07), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(255,92,122,0.06), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'JetBrains Mono', ui-monospace, monospace;}
+  ::-webkit-scrollbar{width:8px; height:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#1E2A38; border-radius:8px;}
+  ::-webkit-scrollbar-thumb:hover{background:#2A3A4C;}
+
+  .panel{
+    background:linear-gradient(180deg, var(--panel2), var(--panel));
+    border:1px solid var(--border);
+    border-radius:14px;
+  }
+  .panel-inset{
+    background:rgba(255,255,255,0.02);
+    border:1px solid var(--border-soft);
+    border-radius:10px;
+  }
+  .sect-title{
+    font-size:11px; letter-spacing:0.04em; color:var(--muted);
+    display:flex; align-items:center; gap:7px; font-weight:600;
+  }
+  .sect-title .dot{width:6px;height:6px;border-radius:50%; flex:none;}
+
+  .bar-track{ height:7px; border-radius:5px; background:rgba(255,255,255,0.06); overflow:hidden; position:relative;}
+  .bar-fill{ height:100%; border-radius:5px; transition:width 0.12s linear; }
+  .bar-row{ display:flex; flex-direction:column; gap:4px; }
+  .bar-label-row{ display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; color:var(--muted); }
+  .bar-value{ font-family:'JetBrains Mono', monospace; color:var(--text); font-size:11.5px; }
+
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:4px; border-radius:3px;
+    background:rgba(255,255,255,0.10); outline:none; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:14px; height:14px; border-radius:50%;
+    background:var(--slider-color, var(--accent)); border:2px solid #060809;
+    box-shadow:0 0 8px var(--slider-color, var(--accent));
+    margin-top:-5px;
+  }
+  input[type=range]::-webkit-slider-runnable-track{ height:4px; border-radius:3px; }
+  input[type=range]::-moz-range-thumb{
+    width:12px; height:12px; border-radius:50%; border:2px solid #060809;
+    background:var(--slider-color, var(--accent)); box-shadow:0 0 8px var(--slider-color, var(--accent));
+  }
+
+  details.acc summary{ cursor:pointer; list-style:none; }
+  details.acc summary::-webkit-details-marker{ display:none; }
+  details.acc[open] .chev{ transform:rotate(90deg); }
+  .chev{ transition:transform 0.15s ease; }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px;
+    font-size:11px; font-weight:600; letter-spacing:0.02em; border:1px solid transparent;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .pulse-dot{ width:6px; height:6px; border-radius:50%; animation:pulseDot 1.6s ease-in-out infinite; }
+  @keyframes pulseDot{ 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.4; transform:scale(0.7);} }
+
+  .icon-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:8px 13px; border-radius:9px; border:1px solid var(--border);
+    background:rgba(255,255,255,0.03); color:var(--text); font-size:12.5px; font-weight:600;
+    cursor:pointer; transition:background 0.12s ease, border-color 0.12s ease;
+    font-family:'Space Grotesk', sans-serif;
+  }
+  .icon-btn:hover{ background:rgba(255,255,255,0.07); border-color:rgba(148,178,209,0.25); }
+  .icon-btn.primary{ background:rgba(94,234,212,0.12); border-color:rgba(94,234,212,0.35); color:var(--accent); }
+  .icon-btn.primary:hover{ background:rgba(94,234,212,0.20); }
+  .icon-btn.small{ padding:6px 10px; font-size:11px; }
+  .icon-btn.ghost{ background:transparent; }
+
+  canvas{ display:block; }
+  #worldCanvas{ width:100%; height:auto; aspect-ratio:1/1; border-radius:12px; background:#03050a; touch-action:none; cursor:crosshair;}
+  .dial-wrap canvas{ width:100%; height:auto; aspect-ratio:1/1; }
+  #cortexCanvas{ width:100%; height:auto; aspect-ratio:1/1; image-rendering:pixelated; border-radius:8px; }
+  #alertChart{ width:100%; height:64px; display:block; }
+
+  .eq{
+    font-family:'JetBrains Mono', monospace; font-size:12px; color:#B9E8E0;
+    background:rgba(94,234,212,0.05); border:1px solid rgba(94,234,212,0.15);
+    border-radius:8px; padding:9px 12px; line-height:1.65; overflow-x:auto;
+  }
+
+  .legend-dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+
+  @media (max-width: 980px){
+    .grid-main{ grid-template-columns: 1fr !important; }
+    .sidebar{ max-height:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-5">
+
+  <!-- HEADER -->
+  <header class="mb-5">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2.5 mb-1.5">
+          <div class="w-2 h-2 rounded-full" style="background:var(--n4); box-shadow:0 0 10px var(--n4);"></div>
+          <span class="text-[11px] tracking-wide text-[--muted] mono" style="color:var(--muted)">SIMULACIÓN CORTICAL EMBEBIDA · N=25 MICROCIRCUITOS POR ÁREA</span>
+        </div>
+        <h1 class="text-[22px] sm:text-[26px] font-semibold tracking-tight leading-tight">Dashboard de Histéresis de Amenaza <span style="color:var(--n4)">— Área N+4</span></h1>
+        <p class="text-[12.5px] mt-1 max-w-[640px]" style="color:var(--muted)">
+          Réplica interactiva de la arquitectura cortical de Chang &amp; Pérez (2025). Cuatro áreas de microcircuitos direccionalmente sintonizados compiten por softmax; N+4 añade un integrador de fuga con constantes de tiempo asimétricas para resolver el problema del "depredador fantasma".
+        </p>
+      </div>
+      <div id="statusBadgeWrap" class="flex flex-col items-end gap-2">
+        <span id="statusBadge" class="badge"><span class="pulse-dot"></span><span id="statusBadgeText">INICIANDO</span></span>
+        <div class="flex items-center gap-1.5">
+          <button id="btnPlayPause" class="icon-btn primary small">⏸ Pausar</button>
+          <button id="btnReset" class="icon-btn small">↺ Reiniciar</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <div class="grid-main grid gap-4" style="grid-template-columns: 1.28fr 1fr;">
+
+    <!-- LEFT: WORLD + EXPLANATION -->
+    <div class="flex flex-col gap-4 min-w-0">
+
+      <div class="panel p-3 sm:p-4">
+        <div class="flex items-center justify-between mb-2.5 flex-wrap gap-2">
+          <div class="sect-title"><span class="dot" style="background:var(--accent)"></span>MUNDO — RECINTO [-1,1]²</div>
+          <div class="flex items-center gap-3 text-[11px] mono" style="color:var(--muted)">
+            <span>FRAME <span id="frameCount" class="text-[--text]" style="color:var(--text)">0</span></span>
+            <span>ENSAYO <span id="trialCount" class="text-[--text]" style="color:var(--text)">1</span></span>
+          </div>
+        </div>
+        <canvas id="worldCanvas" width="720" height="720"></canvas>
+        <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px]" style="color:var(--muted)">
+          <span class="inline-flex items-center gap-1.5"><span class="legend-dot" style="background:#FF4557"></span>Alimento</span>
+          <span class="inline-flex items-center gap-1.5"><span class="legend-dot" style="background:#4F8FFF"></span>Hogar (zona segura)</span>
+          <span class="inline-flex items-center gap-1.5"><span class="legend-dot" style="background:#63E86B"></span>Depredador</span>
+          <span class="inline-flex items-center gap-1.5"><span class="legend-dot" style="background:#F2C94C"></span>Material / Nido</span>
+          <span class="inline-flex items-center gap-1.5"><span class="legend-dot" style="background:#fff"></span>Agente</span>
+          <span class="ml-auto text-[10.5px] italic">clic en el lienzo: reubica la zona de aparición de material</span>
+        </div>
+      </div>
+
+      <div class="panel p-4">
+        <div class="sect-title mb-2.5"><span class="dot" style="background:var(--gold)"></span>EL PROBLEMA DEL DEPREDADOR FANTASMA</div>
+        <p class="text-[12.5px] leading-relaxed" style="color:var(--muted)">
+          En arquitecturas reactivas puras, la amenaza se representa como variable espacial: en cuanto el depredador sale del radio de percepción, la señal cae a cero y el agente reanuda su tarea, siendo emboscado al regreso del depredador. El área <b style="color:var(--n4)">N+4</b> resuelve esto con un integrador de fuga <b>de rápida subida y lenta caída</b>: la alerta persiste ~τ<sub>N4</sub> cuadros después de perder de vista la amenaza.
+        </p>
+        <div class="eq mt-3">
+          Ȧ&nbsp; =&nbsp; k_rise · π(t) · (1 − A)&nbsp; −&nbsp; (A / τ_N4) · (1 − π(t))<br>
+          <span style="color:#7C8BA0">π(t) = σ( (r_percept − ‖p − p_pred‖) / ε )&nbsp;&nbsp;·&nbsp;&nbsp; E<sub>i</sub><sup>N+4</sup> = A · w<sub>i</sub><sup>escape</sup> · cos(φ_escape − θ<sub>i</sub>)</span>
+        </div>
+        <p class="text-[11px] mt-2.5" style="color:var(--muted2)">
+          Resultado publicado: 0/30 finalizaciones de nido en la línea base (τ_N4=0) → 30/30 con N+4 activo (τ_N4=16), p&lt;10⁻¹⁶. Usa el panel derecho para reproducir esta transición cualitativa en vivo.
+        </p>
+      </div>
+    </div>
+
+    <!-- RIGHT: SIDEBAR TELEMETRY -->
+    <div class="sidebar flex flex-col gap-4 min-w-0 lg:max-h-[calc(100vh-40px)] lg:overflow-y-auto lg:pr-1">
+
+      <!-- Homeostasis -->
+      <div class="panel p-4">
+        <div class="sect-title mb-3"><span class="dot" style="background:#4F8FFF"></span>ESTADO HOMEOSTÁTICO</div>
+        <div class="flex flex-col gap-2.5">
+          <div class="bar-row">
+            <div class="bar-label-row"><span>Hambre h (energía)</span><span class="bar-value" id="v_hunger">0.00</span></div>
+            <div class="bar-track"><div class="bar-fill" id="b_hunger" style="width:0%; background:#FF9F45;"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label-row"><span>Déficit de seguridad s (vulnerabilidad)</span><span class="bar-value" id="v_safety">0.00</span></div>
+            <div class="bar-track"><div class="bar-fill" id="b_safety" style="width:0%; background:#4F8FFF;"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label-row"><span>Estrés de borde</span><span class="bar-value" id="v_border">0.00</span></div>
+            <div class="bar-track"><div class="bar-fill" id="b_border" style="width:0%; background:#9B7BFF;"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label-row"><span>Carga L (material transportado)</span><span class="bar-value" id="v_load">0.00</span></div>
+            <div class="bar-track"><div class="bar-fill" id="b_load" style="width:0%; background:var(--gold);"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label-row"><span>Impulso constructivo</span><span class="bar-value" id="v_impulse">0.00</span></div>
+            <div class="bar-track"><div class="bar-fill" id="b_impulse" style="width:0%; background:var(--n2);"></div></div>
+          </div>
+          <div class="flex items-center justify-between pt-1 text-[11.5px]" style="color:var(--muted)">
+            <span>Nido: <span class="mono" id="v_nest" style="color:var(--text)">0/9</span></span>
+            <span>Instinto constructivo: <span class="mono" id="v_instinct" style="color:var(--text)">0.00</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- N+4 Hysteresis -->
+      <div class="panel p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="sect-title"><span class="dot" style="background:var(--n4)"></span>N+4 · HISTÉRESIS DE AMENAZA</div>
+          <span id="ghostBadge" class="badge" style="display:none; background:rgba(255,162,61,0.14); border-color:rgba(255,162,61,0.4); color:var(--n4);">
+            <span class="pulse-dot" style="background:var(--n4)"></span>MEMORIA ACTIVA
+          </span>
+        </div>
+        <div class="bar-row mb-3">
+          <div class="bar-label-row"><span>Alerta A(t)</span><span class="bar-value" id="v_alert">0.00</span></div>
+          <div class="bar-track" style="height:9px;"><div class="bar-fill" id="b_alert" style="width:0%; background:var(--n4); box-shadow:0 0 8px var(--n4);"></div></div>
+        </div>
+        <canvas id="alertChart" width="600" height="130"></canvas>
+        <div class="flex justify-between text-[10px] mt-1 mb-3" style="color:var(--muted2)">
+          <span style="color:var(--n4)">— A(t) alerta</span>
+          <span style="color:#45D3E8">— π(t) percepción de amenaza</span>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <div>
+            <div class="flex justify-between text-[11.5px] mb-1" style="color:var(--muted)"><span>Constante de decaimiento τ_N4 (cuadros)</span><span class="bar-value" id="v_tau">16</span></div>
+            <input type="range" id="p_tau" min="0" max="32" step="1" value="16" style="--slider-color:var(--n4)">
+          </div>
+          <div>
+            <div class="flex justify-between text-[11.5px] mb-1" style="color:var(--muted)"><span>Tasa de subida k_rise</span><span class="bar-value" id="v_krise">0.90</span></div>
+            <input type="range" id="p_krise" min="0.1" max="2" step="0.05" value="0.9" style="--slider-color:var(--n4)">
+          </div>
+          <div>
+            <div class="flex justify-between text-[11.5px] mb-1" style="color:var(--muted)"><span>Radio de percepción r_percept</span><span class="bar-value" id="v_rperc">0.45</span></div>
+            <input type="range" id="p_rperc" min="0.15" max="0.9" step="0.01" value="0.45" style="--slider-color:var(--n4)">
+          </div>
+        </div>
+        <div class="flex gap-1.5 mt-3">
+          <button class="icon-btn small ablation-btn" data-tau="0" style="flex:1">τ=0 base</button>
+          <button class="icon-btn small ablation-btn" data-tau="8" style="flex:1">τ=8 umbral</button>
+          <button class="icon-btn small ablation-btn primary" data-tau="16" style="flex:1">τ=16 paper</button>
+          <button class="icon-btn small ablation-btn" data-tau="32" style="flex:1">τ=32 ext.</button>
+        </div>
+        <p class="text-[10.5px] mt-2 leading-snug" style="color:var(--muted2)">
+          Ablación publicada: transición sigmoidal con punto medio τ_c ≈ 7.1 cuadros. Prueba τ=0 y observa las capturas repetidas ("fantasma"); luego τ=16 y observa la finalización del nido.
+        </p>
+      </div>
+
+      <!-- Cortical Areas -->
+      <div class="panel p-4">
+        <div class="sect-title mb-3"><span class="dot" style="background:var(--accent)"></span>ÁREAS CORTICALES — POBLACIONES (N=25)</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="panel-inset p-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10.5px] font-semibold" style="color:var(--mot)">N+1 · MOT</span>
+              <span class="text-[9.5px]" style="color:var(--muted2)">motor</span>
+            </div>
+            <div class="dial-wrap"><canvas id="dialMot" width="160" height="160"></canvas></div>
+            <input type="range" id="gainMot" min="0" max="2" step="0.05" value="1" class="mt-1.5" style="--slider-color:var(--mot)">
+            <div class="text-[9.5px] text-center mt-0.5" style="color:var(--muted2)">ganancia manual <span id="v_gainMot" class="mono">1.00</span></div>
+          </div>
+          <div class="panel-inset p-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10.5px] font-semibold" style="color:var(--nav)">N+2 · NAV</span>
+              <span class="text-[9.5px]" style="color:var(--muted2)">bordes</span>
+            </div>
+            <div class="dial-wrap"><canvas id="dialNav" width="160" height="160"></canvas></div>
+            <input type="range" id="gainNav" min="0" max="2" step="0.05" value="1" class="mt-1.5" style="--slider-color:var(--nav)">
+            <div class="text-[9.5px] text-center mt-0.5" style="color:var(--muted2)">ganancia manual <span id="v_gainNav" class="mono">1.00</span></div>
+          </div>
+          <div class="panel-inset p-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10.5px] font-semibold" style="color:var(--n2)">N+3 · SEN</span>
+              <span class="text-[9.5px]" style="color:var(--muted2)">nido</span>
+            </div>
+            <div class="dial-wrap"><canvas id="dialN2" width="160" height="160"></canvas></div>
+            <input type="range" id="gainN2" min="0" max="2" step="0.05" value="1" class="mt-1.5" style="--slider-color:var(--n2)">
+            <div class="text-[9.5px] text-center mt-0.5" style="color:var(--muted2)">ganancia manual <span id="v_gainN2" class="mono">1.00</span></div>
+          </div>
+          <div class="panel-inset p-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10.5px] font-semibold" style="color:var(--n4)">N+4 · HIST.</span>
+              <span class="text-[9.5px]" style="color:var(--muted2)">amenaza</span>
+            </div>
+            <div class="dial-wrap"><canvas id="dialN4" width="160" height="160"></canvas></div>
+            <input type="range" id="gainN4" min="0" max="2" step="0.05" value="1" class="mt-1.5" style="--slider-color:var(--n4)">
+            <div class="text-[9.5px] text-center mt-0.5" style="color:var(--muted2)">ganancia manual <span id="v_gainN4" class="mono">1.00</span></div>
+          </div>
+        </div>
+        <p class="text-[10px] mt-2.5 leading-snug" style="color:var(--muted2)">
+          Nota: el módulo de construcción de nido corresponde al Área N+3 (SEN) del paper; el código de referencia lo etiqueta internamente como "N+2". Se preserva aquí la nomenclatura del paper.
+        </p>
+        <div class="mt-3">
+          <div class="text-[10.5px] mb-1.5" style="color:var(--muted)">Mapa cortical (difusión, decae más rápido en descanso)</div>
+          <canvas id="cortexCanvas" width="210" height="210"></canvas>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <details class="acc panel p-4" open>
+        <summary class="flex items-center justify-between">
+          <div class="sect-title"><span class="dot" style="background:#9B7BFF"></span>PARÁMETROS Y ENTORNO</div>
+          <svg class="chev w-3.5 h-3.5" style="color:var(--muted)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>
+        </summary>
+        <div class="mt-3.5 flex flex-col gap-3.5">
+          <div>
+            <div class="flex justify-between text-[11.5px] mb-1" style="color:var(--muted)"><span>Tasa de consumo energético α_h (hambre)</span><span class="bar-value" id="v_alphaH">0.0015</span></div>
+            <input type="range" id="p_alphaH" min="0.0003" max="0.006" step="0.0001" value="0.0015" style="--slider-color:#FF9F45">
+          </div>
+          <div>
+            <div class="flex justify-between text-[11.5px] mb-1" style="color:var(--muted)"><span>Tasa de acumulación de vulnerabilidad β_s (déficit de seguridad)</span><span class="bar-value" id="v_betaS">0.0020</span></div>
+            <input type="range" id="p_betaS" min="0.0003" max="0.006" step="0.0001" value="0.0020" style="--slider-color:#4F8FFF">
+          </div>
+          <div>
+            <div class="flex justify-between text-[11.5px] mb-1" style="color:var(--muted)"><span>Velocidad de simulación</span><span class="bar-value" id="v_speed">1.00×</span></div>
+            <input type="range" id="p_speed" min="0.1" max="3" step="0.05" value="0.6" style="--slider-color:var(--accent)">
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button id="btnResetZone" class="icon-btn small" style="flex:1">↺ Zona de recursos por defecto</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- Episode stats -->
+      <div class="panel p-4">
+        <div class="sect-title mb-3"><span class="dot" style="background:var(--danger)"></span>ESTADÍSTICAS DE ENSAYOS (réplica Tabla 1)</div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="panel-inset py-2.5">
+            <div class="text-[18px] font-semibold mono" id="stat_trials">0</div>
+            <div class="text-[9.5px] mt-0.5" style="color:var(--muted2)">ensayos</div>
+          </div>
+          <div class="panel-inset py-2.5">
+            <div class="text-[18px] font-semibold mono" id="stat_completion" style="color:var(--n2)">—</div>
+            <div class="text-[9.5px] mt-0.5" style="color:var(--muted2)">% finalización</div>
+          </div>
+          <div class="panel-inset py-2.5">
+            <div class="text-[18px] font-semibold mono" id="stat_captures" style="color:var(--danger)">0</div>
+            <div class="text-[9.5px] mt-0.5" style="color:var(--muted2)">capturas</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="mt-6 mb-2 text-center text-[10.5px]" style="color:var(--muted2)">
+    Basado en Chang, O. &amp; Pérez, J. (2025), "Threat Hysteresis as a Minimal Mechanism for Long-Horizon Survival in an Embodied Cortical Agent". Simulación educativa, no oficial.
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+// ============================================================
+// UTILIDADES
+// ============================================================
+const N = 25;
+const ANGLES = Array.from({length:N}, (_,i)=> 2*Math.PI*i/N);
+function clip(x,a,b){ return Math.min(Math.max(x,a),b); }
+function U(a,b){ return a + Math.random()*(b-a); }
+function sigmoidGate(x, edge=30.0){
+  const z = clip(-edge*x, -60, 60);
+  return 1/(1+Math.exp(z));
+}
+function softmaxRelax(activity, energies, alpha, temperature){
+  let maxE = -Infinity;
+  for(let i=0;i<energies.length;i++) if(energies[i]>maxE) maxE=energies[i];
+  const w = new Array(energies.length);
+  let sum = 0;
+  for(let i=0;i<energies.length;i++){ w[i]=Math.exp((energies[i]-maxE)/temperature); sum+=w[i]; }
+  const out = new Array(activity.length);
+  for(let i=0;i<activity.length;i++){ out[i]=(1-alpha)*activity[i] + alpha*(w[i]/sum); }
+  return out;
+}
+function vec(x,y){ return {x,y}; }
+function sub(a,b){ return vec(a.x-b.x, a.y-b.y); }
+function norm(a){ return Math.hypot(a.x,a.y); }
+function ang(a){ return Math.atan2(a.y,a.x); }
+
+// ============================================================
+// PARÁMETROS AJUSTABLES (valores por defecto = paper / código)
+// ============================================================
+const P = {
+  ALPHA_MOT:0.35, T_MOT:0.25,
+  ALPHA_NAV:0.40, T_NAV:0.15,
+  ALPHA_N2:0.35,  T_N2:0.20,
+  ALPHA_N4:0.35,  T_N4:0.20,
+  PRED_PERCEPTION_RADIUS:0.45,
+  TAU_N4:16.0,
+  ALERT_RISE_RATE:0.9,
+  AWAKE_AGE:0.6,
+  MATURATION_RHO:12.0,
+  PICKUP_RADIUS:0.12,
+  NEST_RADIUS:0.25,
+  K_PICKUP:0.55,
+  K_DROP:0.45,
+  STEEPNESS_GATE:50.0,
+  MIN_IMPULSE:0.15,
+  alphaH:0.0015,
+  betaS:0.0020,
+  gainMot:1.0, gainNav:1.0, gainN2:1.0, gainN4:1.0,
+  speed:0.6
+};
+
+// ============================================================
+// ESTADO DEL MUNDO
+// ============================================================
+let S = {};
+
+function makeCMs(kind){
+  const arr = [];
+  for(let k=0;k<N;k++){
+    const base = {angle:ANGLES[k], explore:0};
+    if(kind==='mot'){ base.food_weight=U(1.2,1.6); base.home_weight=U(1.3,1.7); base.pred_weight=U(1.2,1.7); base.explore=U(0,0.06); }
+    else if(kind==='nav'){ base.border_weight=U(0.8,1.2); base.explore=U(0,0.05); }
+    else if(kind==='n2'){ base.material_weight=U(1.2,1.6); base.nest_weight=U(1.3,1.7); base.explore=U(0,0.04); }
+    else if(kind==='n4'){ base.escape_weight=U(1.2,1.7); base.explore=U(0,0.04); }
+    arr.push(base);
+  }
+  return arr;
+}
+
+function freshState(keepStats){
+  const stats = keepStats || {trials:0, completions:0, captures:0, outcomes:[]};
+  return {
+    pos: vec(0,0), theta:0,
+    hunger:0.3, safety:0.0, danger:0.0, borderStress:0.0, alertN4:0.0,
+    food_radius:0.65, home_radius:0.60, pred_radius:0.8,
+    food_theta:0, home_theta:Math.PI, pred_theta:0,
+    food_pos: vec(0.65,0.45), home_pos: vec(-0.55,-0.35), pred_pos: vec(0,-0.7),
+    nest_pos: vec(-0.70,0.70), nest_size:0.30, nest_cells:3,
+    max_materials:9, nest_completed:false, total_deposited:0, total_picked_fraction:0,
+    material_pos: vec(0,0), material_active:false,
+    L:0, age:0, build_instinct:0,
+    build_impulse:0.8, base_impulse_rate:0.015, build_urgency:1.2,
+    materials_spawned:0, max_materials_spawned:30, time_without_material:0, time_without_building:0,
+    food_lock:false, home_lock:false,
+    spawnCenter: vec(0.75,-0.75), spawnRadius:0.20,
+    activity_mot: new Array(N).fill(1/N),
+    activity_nav: new Array(N).fill(1/N),
+    activity_n2: new Array(N).fill(1/N),
+    activity_n4: new Array(N).fill(1/N),
+    cms_mot: makeCMs('mot'), cms_nav: makeCMs('nav'), cms_n2: makeCMs('n2'), cms_n4: makeCMs('n4'),
+    brain: new Array(21*21).fill(0),
+    frame:0, completedHold:0,
+    trail: [],
+    flashes: [],
+    motorN2:0, motorN4:0, restIntensity:0,
+    historyAlert: new Array(240).fill(0),
+    historyPerc: new Array(240).fill(0),
+    stats
+  };
+}
+
+function brainIdx(r,c){ return r*21+c; }
+const CORE_MOT = {r0:7,c0:5};
+const CORE_NAV = {r0:7,c0:12};
+const CORE_N4  = {r0:13,c0:5};
+const CORE_N2  = {r0:13,c0:12};
+
+function spawnMaterial(st){
+  if(st.materials_spawned>=st.max_materials_spawned || st.nest_completed){ st.material_active=false; return; }
+  if(st.material_active) return;
+  const cx=st.spawnCenter.x, cy=st.spawnCenter.y, radius=st.spawnRadius;
+  for(let t=0;t<200;t++){
+    const a=U(0,2*Math.PI), d=U(0,radius);
+    const np = vec(cx+d*Math.cos(a), cy+d*Math.sin(a));
+    if(norm(sub(np, st.nest_pos))>0.20 && norm(sub(np, st.home_pos))>0.20){
+      st.material_pos=np; st.material_active=true; st.materials_spawned++;
+      return;
+    }
+  }
+  st.material_active=false;
+}
+
+function addFlash(st, x, y, color, kind){
+  st.flashes.push({x,y,color,kind,t:0,ttl: kind==='burst'?26:16});
+}
+
+function resetSystem(cause){
+  const prevSpawn = S.spawnCenter, prevRadius = S.spawnRadius;
+  const stats = S.stats;
+  stats.trials++;
+  if(cause==='capture'){ stats.captures++; stats.outcomes.push('capture'); }
+  else if(cause==='completed'){ stats.completions++; stats.outcomes.push('completed'); }
+  if(stats.outcomes.length>200) stats.outcomes.shift();
+  S = freshState(stats);
+  S.spawnCenter = prevSpawn; S.spawnRadius = prevRadius;
+
+  S.food_theta = U(0,2*Math.PI); S.home_theta = U(0,2*Math.PI); S.pred_theta = U(0,2*Math.PI);
+  S.food_pos = vec(S.food_radius*Math.cos(S.food_theta), 0.55*Math.sin(1.7*S.food_theta));
+  S.home_pos = vec(S.home_radius*Math.cos(S.home_theta), 0.45*Math.sin(1.3*S.home_theta));
+  S.pred_pos = vec(S.pred_radius*Math.sin(S.pred_theta), S.pred_radius*Math.cos(S.pred_theta));
+  spawnMaterial(S);
+}
+
+// ============================================================
+// PASO DE SIMULACIÓN (equivale a update() del código de referencia)
+// ============================================================
+function step(dt){
+  const st = S;
+  st.frame++;
+
+  const dist_food = norm(sub(st.pos, st.food_pos));
+  const dist_home = norm(sub(st.pos, st.home_pos));
+  const dist_pred = norm(sub(st.pos, st.pred_pos));
+  const dist_nest = norm(sub(st.pos, st.nest_pos));
+  const dist_material = st.material_active ? norm(sub(st.pos, st.material_pos)) : 999.0;
+
+  st.hunger = clip(st.hunger + P.alphaH*dt, 0, 1);
+  if(dist_home < 0.25){ st.safety = 0.0; } else { st.safety = clip(st.safety + P.betaS*dt, 0, 1); }
+  st.danger = clip(st.danger + 0.003*dt, 0, 1);
+
+  const gate_at_home = sigmoidGate(0.25 - dist_home);
+  const gate_low_hunger = sigmoidGate(0.40 - st.hunger);
+  const gate_high_safety = sigmoidGate(st.safety - 0.80);
+  const gate_urgency = sigmoidGate(st.hunger - 0.50) * sigmoidGate(0.40 - st.safety);
+
+  const attenuation = clip((1.0 - st.safety)/0.20, 0, 1);
+  const hunger_attenuated = st.hunger*attenuation;
+  const safety_attenuated = st.safety*1.8;
+  const hunger_urgent = st.hunger*1.5;
+  const safety_urgent = st.safety*0.3;
+  const hunger_flat = st.hunger;
+  const safety_flat = st.safety;
+
+  const weight_attenuated = gate_high_safety;
+  const weight_urgent = gate_urgency*(1.0-weight_attenuated);
+  const weight_flat = clip(1.0-weight_attenuated-weight_urgent, 0, 1);
+
+  const effective_hunger_away = weight_attenuated*hunger_attenuated + weight_urgent*hunger_urgent + weight_flat*hunger_flat;
+  const current_safety_need_away = weight_attenuated*safety_attenuated + weight_urgent*safety_urgent + weight_flat*safety_flat;
+
+  const active_at_home = gate_at_home*(1.0-gate_low_hunger);
+  const rest_intensity = gate_at_home*gate_low_hunger;
+  const away = 1.0-gate_at_home;
+
+  const effective_hunger = active_at_home*st.hunger + away*effective_hunger_away;
+  const current_safety_need = rest_intensity*1.0 + away*current_safety_need_away;
+  st.restIntensity = rest_intensity;
+
+  st.age += 0.01*dt;
+  st.build_instinct = sigmoidGate(st.age - P.AWAKE_AGE, P.MATURATION_RHO);
+
+  if(!st.nest_completed){
+    st.build_urgency += 0.005*dt;
+    st.build_urgency += 0.015*dt * sigmoidGate(dist_material - 999 + 1) * (1.0 - st.L);
+    st.build_urgency += 0.02*dt * st.L;
+    const progressU = st.total_deposited / st.max_materials;
+    st.build_urgency += 0.005*progressU*dt;
+    st.time_without_building += dt;
+    st.build_urgency += 0.01*dt * sigmoidGate(st.time_without_building - 60, 0.3);
+    st.build_urgency = clip(st.build_urgency, 0, 1.5);
+  }
+
+  const dist_to_wall_x = 1.0 - Math.abs(st.pos.x);
+  const dist_to_wall_y = 1.0 - Math.abs(st.pos.y);
+  const closest_wall_dist = Math.min(dist_to_wall_x, dist_to_wall_y);
+  st.borderStress = closest_wall_dist < 0.25 ? Math.pow(clip((0.25-closest_wall_dist)/0.25,0,1), 2) : 0.0;
+
+  st.food_theta += 0.015*dt;
+  st.food_pos = vec(st.food_radius*Math.cos(st.food_theta), 0.55*Math.sin(1.7*st.food_theta));
+  st.home_theta -= 0.010*dt;
+  st.home_pos = vec(st.home_radius*Math.cos(st.home_theta), 0.45*Math.sin(1.3*st.home_theta));
+
+  const pred_speed = 0.023*dt;
+  if(dist_home < 0.30){ st.pred_theta += U(-0.8,0.8); }
+  else { const toPrey = sub(st.pos, st.pred_pos); st.pred_theta = ang(toPrey); }
+  st.pred_pos = vec(
+    clip(st.pred_pos.x + pred_speed*Math.cos(st.pred_theta), -1.2, 1.2),
+    clip(st.pred_pos.y + pred_speed*Math.sin(st.pred_theta), -1.2, 1.2)
+  );
+
+  const threat_perception = sigmoidGate(P.PRED_PERCEPTION_RADIUS - dist_pred, 25.0);
+  const alert_rise = P.ALERT_RISE_RATE * threat_perception * (1.0 - st.alertN4);
+  const alert_decay = (st.alertN4 / Math.max(P.TAU_N4,1e-6)) * (1.0 - threat_perception);
+  st.alertN4 = clip(st.alertN4 + dt*(alert_rise - alert_decay), 0, 1);
+
+  st.historyAlert.push(st.alertN4); st.historyAlert.shift();
+  st.historyPerc.push(threat_perception); st.historyPerc.shift();
+
+  if(dist_food < 0.10 && !st.food_lock){ st.hunger = 0.0; st.food_lock = true; addFlash(st, st.food_pos.x, st.food_pos.y, '#FF4557','ring'); }
+  if(dist_home < 0.10 && !st.home_lock){ st.home_lock = true; addFlash(st, st.home_pos.x, st.home_pos.y, '#4F8FFF','ring'); }
+  if(dist_pred < 0.12){
+    if(dist_home < 0.30){ st.danger = 0.0; }
+    else { addFlash(st, st.pos.x, st.pos.y, '#FF4557', 'burst'); resetSystem('capture'); return; }
+  }
+  if(dist_food > 0.18) st.food_lock = false;
+  if(dist_home > 0.18) st.home_lock = false;
+
+  if(st.nest_completed){ st.build_impulse *= 0.95; }
+  else {
+    st.build_impulse += st.base_impulse_rate*dt;
+    st.build_impulse += st.build_urgency*0.02*dt;
+    st.build_impulse += 0.01*dt * (1.0 - st.L) * (st.material_active?1.0:0.0);
+    st.build_impulse += 0.02*dt * st.L;
+    const progressI = st.total_deposited / st.max_materials;
+    st.build_impulse += 0.005*progressI*dt;
+    st.build_impulse += 0.01*dt * sigmoidGate(st.time_without_building - 50, 0.3);
+  }
+  st.build_impulse = clip(st.build_impulse, 0, 1);
+
+  const g_pickup = st.material_active ? sigmoidGate(P.PICKUP_RADIUS - dist_material, P.STEEPNESS_GATE) : 0.0;
+  const g_drop = !st.nest_completed ? sigmoidGate(P.NEST_RADIUS - dist_nest, P.STEEPNESS_GATE) : 0.0;
+  const flow_in = P.K_PICKUP * g_pickup * (1.0 - st.L);
+  const flow_out = P.K_DROP * g_drop * st.L;
+  st.L = clip(st.L + dt*(flow_in - flow_out), 0, 1);
+
+  const prevDeposited = st.total_deposited;
+  st.total_deposited = Math.min(st.max_materials, st.total_deposited + dt*flow_out);
+  if(Math.floor(st.total_deposited) > Math.floor(prevDeposited)){
+    addFlash(st, st.nest_pos.x, st.nest_pos.y, '#F2C94C', 'ring');
+  }
+  st.total_picked_fraction += dt*flow_in;
+  if(st.total_picked_fraction >= 1.0 && st.material_active){
+    st.material_active = false; st.total_picked_fraction -= 1.0;
+  }
+  if(st.total_deposited >= st.max_materials){
+    if(!st.nest_completed){ addFlash(st, st.nest_pos.x, st.nest_pos.y, '#F2C94C', 'burst'); }
+    st.nest_completed = true; st.material_active = false;
+  }
+
+  if(!st.nest_completed && !st.material_active){
+    if(st.materials_spawned < st.max_materials_spawned) spawnMaterial(st);
+    else {
+      st.time_without_material += dt;
+      if(st.time_without_material > 150){ st.materials_spawned=0; st.time_without_material=0; spawnMaterial(st); }
+    }
+  }
+
+  const vec_food = sub(st.food_pos, st.pos), vec_home = sub(st.home_pos, st.pos), vec_pred = sub(st.pred_pos, st.pos);
+  const angle_food = ang(vec_food), angle_home = ang(vec_home), angle_pred = ang(vec_pred);
+
+  const force_west = 1.0/(1.0+(st.pos.x-(-0.95)));
+  const force_east = 1.0/(1.0+(0.95-st.pos.x));
+  const force_south = 1.0/(1.0+(st.pos.y-(-0.95)));
+  const force_north = 1.0/(1.0+(0.95-st.pos.y));
+  const angle_border = Math.atan2(force_north-force_south, force_east-force_west);
+
+  const current_danger_factor = dist_home < 0.25 ? 0.0 : st.alertN4;
+  const energies_mot = new Array(N);
+  for(let i=0;i<N;i++){
+    const cm = st.cms_mot[i];
+    energies_mot[i] = P.gainMot*(
+      effective_hunger*cm.food_weight*Math.cos(angle_food-cm.angle)
+      + current_safety_need*cm.home_weight*Math.cos(angle_home-cm.angle)
+      - current_danger_factor*cm.pred_weight*Math.cos(angle_pred-cm.angle)
+    ) + cm.explore*U(-1,1) + 0.06*(Math.random()*2-1);
+  }
+  st.activity_mot = softmaxRelax(st.activity_mot, energies_mot, P.ALPHA_MOT, P.T_MOT);
+
+  const energies_nav = new Array(N);
+  const rest_noise_arr = new Array(N);
+  for(let i=0;i<N;i++) rest_noise_arr[i] = U(-1,1)*2.0;
+  for(let i=0;i<N;i++){
+    const cm = st.cms_nav[i];
+    const raw = -st.borderStress*cm.border_weight*Math.cos(angle_border-cm.angle) + cm.explore*U(-1,1);
+    energies_nav[i] = P.gainNav*((1.0-rest_intensity)*raw + rest_intensity*rest_noise_arr[i]);
+  }
+  st.activity_nav = softmaxRelax(st.activity_nav, energies_nav, P.ALPHA_NAV, P.T_NAV);
+
+  const vec_material = st.material_active ? sub(st.material_pos, st.pos) : vec(0,0);
+  const vec_nest = sub(st.nest_pos, st.pos);
+  const angle_material = st.material_active && norm(vec_material)>0 ? ang(vec_material) : 0.0;
+  const angle_nest = ang(vec_nest);
+  const material_available = st.material_active ? 1.0 : 0.0;
+
+  const energies_n2 = new Array(N);
+  for(let i=0;i<N;i++){
+    const cm = st.cms_n2[i];
+    const material_align = st.material_active ? Math.cos(angle_material-cm.angle) : 0.0;
+    const nest_align = Math.cos(angle_nest-cm.angle);
+    energies_n2[i] = P.gainN2*(
+      (1-st.L)*material_available*cm.material_weight*material_align*(0.8+0.5*st.build_instinct)
+      + st.L*cm.nest_weight*nest_align*(0.7+0.5*st.build_instinct)
+      + st.L*cm.material_weight*material_align*0.1
+      + (1-st.L)*material_available*cm.nest_weight*nest_align*0.1
+      + (1-st.L)*(1-material_available)*cm.explore*U(0.5,1.5)*(0.3+st.build_instinct)
+    ) + cm.explore*U(-1,1);
+  }
+  st.activity_n2 = softmaxRelax(st.activity_n2, energies_n2, P.ALPHA_N2, P.T_N2);
+
+  const angle_escape = angle_pred + Math.PI;
+  const energies_n4 = new Array(N);
+  for(let i=0;i<N;i++){
+    const cm = st.cms_n4[i];
+    const escape_align = Math.cos(angle_escape-cm.angle);
+    energies_n4[i] = P.gainN4*(st.alertN4*cm.escape_weight*escape_align) + cm.explore*U(-1,1) + 0.06*(Math.random()*2-1);
+  }
+  st.activity_n4 = softmaxRelax(st.activity_n4, energies_n4, P.ALPHA_N4, P.T_N4);
+
+  function popVec(activity){
+    let mx=0, my=0;
+    for(let i=0;i<N;i++){ mx += activity[i]*Math.cos(ANGLES[i]); my += activity[i]*Math.sin(ANGLES[i]); }
+    const m = Math.hypot(mx,my);
+    return m>0 ? vec(mx/m,my/m) : vec(0,0);
+  }
+  const motor_mot = popVec(st.activity_mot);
+  const motor_nav = popVec(st.activity_nav);
+  const motor_n2 = popVec(st.activity_n2);
+  const motor_n4 = popVec(st.activity_n4);
+
+  const g_impulse = sigmoidGate(st.build_impulse - P.MIN_IMPULSE, 40.0);
+  let weight_n2 = st.build_instinct * g_impulse * st.build_impulse * 0.7;
+  const hunger_factor = 1.0 - st.hunger*0.5;
+  weight_n2 *= hunger_factor;
+  const danger_factor = clip(dist_pred/0.4, 0, 1);
+  weight_n2 *= danger_factor;
+  weight_n2 *= (1.0 + 0.3*st.L);
+  weight_n2 = clip(weight_n2, 0, 0.7);
+
+  let weight_n4 = clip(st.alertN4*0.65, 0, 0.65);
+  const sumW = weight_n2 + weight_n4;
+  if(sumW > 1.0){ const nf = 1.0/sumW; weight_n2 *= nf; weight_n4 *= nf; }
+  st.motorN2 = weight_n2; st.motorN4 = weight_n4;
+
+  let motor = vec(
+    (1.0-weight_n2-weight_n4)*motor_mot.x + weight_n2*motor_n2.x + weight_n4*motor_n4.x,
+    (1.0-weight_n2-weight_n4)*motor_mot.y + weight_n2*motor_n2.y + weight_n4*motor_n4.y
+  );
+  motor = vec((1.0-st.borderStress)*motor.x + st.borderStress*motor_nav.x, (1.0-st.borderStress)*motor.y + st.borderStress*motor_nav.y);
+  const mag = norm(motor);
+  if(mag>0){ motor = vec(motor.x/mag, motor.y/mag); }
+
+  if(mag>0){
+    st.theta = Math.atan2(motor.y, motor.x);
+    const speed = (0.04+0.04*clip(mag,0,1))*dt*(1.0-rest_intensity);
+    st.pos = vec(st.pos.x+speed*motor.x, st.pos.y+speed*motor.y);
+  }
+  st.pos = vec(clip(st.pos.x,-0.95,0.95), clip(st.pos.y,-0.95,0.95));
+
+  st.trail.push({x:st.pos.x,y:st.pos.y});
+  if(st.trail.length>28) st.trail.shift();
+
+  updateBrain(st, rest_intensity, gate_at_home);
+
+  for(let i=st.flashes.length-1;i>=0;i--){ st.flashes[i].t++; if(st.flashes[i].t>st.flashes[i].ttl) st.flashes.splice(i,1); }
+
+  if(st.nest_completed){
+    st.completedHold++;
+    if(st.completedHold > 130){ resetSystem('completed'); }
+  }
+}
+
+function reshape5(flat){
+  const out = [];
+  for(let r=0;r<5;r++){ out.push(flat.slice(r*5,r*5+5)); }
+  return out;
+}
+function blur5(flat){
+  const v = reshape5(flat);
+  const k = [[0.06,0.12,0.06],[0.12,0.28,0.12],[0.06,0.12,0.06]];
+  const p = [];
+  for(let r=0;r<7;r++){ p.push(new Array(7).fill(0)); }
+  for(let r=0;r<5;r++) for(let c=0;c<5;c++) p[r+1][c+1] = v[r][c];
+  const out = [];
+  for(let i=0;i<5;i++){
+    for(let j=0;j<5;j++){
+      let s=0;
+      for(let a=0;a<3;a++) for(let b=0;b<3;b++) s += p[i+a][j+b]*k[a][b];
+      out.push(s);
+    }
+  }
+  return out;
+}
+function updateBrain(st, restIntensity, gateAtHome){
+  const restForMap = gateAtHome;
+  const cm = blur5(st.activity_mot);
+  const cn = blur5(st.activity_nav);
+  const c2 = blur5(st.activity_n2);
+  const c4 = blur5(st.activity_n4);
+
+  const decay_active = 0.84, decay_rest = 0.70;
+  const decayFactor = decay_active - (decay_active-decay_rest)*restForMap;
+  for(let i=0;i<st.brain.length;i++) st.brain[i] *= decayFactor;
+
+  const gain = 0.50*(1.0-0.45*restForMap);
+  const noiseAmp = 0.03;
+
+  function inject(core, arr, extraGain){
+    let k=0;
+    for(let r=core.r0;r<core.r0+5;r++){
+      for(let c=core.c0;c<core.c0+5;c++){
+        const idx = brainIdx(r,c);
+        st.brain[idx] += arr[k]*gain*(extraGain===undefined?1:extraGain) + Math.random()*noiseAmp;
+        k++;
+      }
+    }
+  }
+  inject(CORE_MOT, cm);
+  inject(CORE_NAV, cn);
+  inject(CORE_N2, c2);
+  inject(CORE_N4, c4, 0.3+0.7*st.alertN4);
+
+  const bias = 0.03*restForMap;
+  function addBias(core){
+    for(let r=core.r0;r<core.r0+5;r++) for(let c=core.c0;c<core.c0+5;c++) st.brain[brainIdx(r,c)] += bias;
+  }
+  addBias(CORE_MOT); addBias(CORE_NAV); addBias(CORE_N2); addBias(CORE_N4);
+
+  for(let i=0;i<st.brain.length;i++) st.brain[i] = clip(st.brain[i],0,0.80);
+  st.brainVmax = clip(0.80 - 0.35*(1.0-restForMap), 0.40, 0.80);
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+const worldCanvas = document.getElementById('worldCanvas');
+const wctx = worldCanvas.getContext('2d');
+const cortexCanvas = document.getElementById('cortexCanvas');
+const cctx = cortexCanvas.getContext('2d');
+const alertChart = document.getElementById('alertChart');
+const actx = alertChart.getContext('2d');
+const dials = {
+  mot: document.getElementById('dialMot').getContext('2d'),
+  nav: document.getElementById('dialNav').getContext('2d'),
+  n2: document.getElementById('dialN2').getContext('2d'),
+  n4: document.getElementById('dialN4').getContext('2d')
+};
+
+function toPx(p, size){ return {x:(p.x+1)/2*size, y:(1-p.y)/2*size}; }
+
+function infernoColor(t){
+  t = clip(t,0,1);
+  const stops = [
+    [0,   0,0,4],
+    [0.2, 40,11,84],
+    [0.4, 101,21,110],
+    [0.55,159,42,99],
+    [0.7, 212,72,66],
+    [0.85,245,125,21],
+    [1.0, 252,255,164]
+  ];
+  for(let i=0;i<stops.length-1;i++){
+    const a=stops[i], b=stops[i+1];
+    if(t>=a[0] && t<=b[0]){
+      const f = (t-a[0])/(b[0]-a[0]||1);
+      return `rgb(${Math.round(a[1]+f*(b[1]-a[1]))},${Math.round(a[2]+f*(b[2]-a[2]))},${Math.round(a[3]+f*(b[3]-a[3]))})`;
+    }
+  }
+  return 'rgb(252,255,164)';
+}
+
+function drawWorld(){
+  const st = S;
+  const size = worldCanvas.width;
+  wctx.fillStyle = '#03050a';
+  wctx.fillRect(0,0,size,size);
+
+  wctx.strokeStyle = 'rgba(148,178,209,0.06)';
+  wctx.lineWidth = 1;
+  for(let g=-0.75; g<=0.76; g+=0.25){
+    const p1 = toPx(vec(g,-1), size), p2 = toPx(vec(g,1), size);
+    wctx.beginPath(); wctx.moveTo(p1.x,0); wctx.lineTo(p1.x,size); wctx.stroke();
+    const p3 = toPx(vec(-1,g), size);
+    wctx.beginPath(); wctx.moveTo(0,p3.y); wctx.lineTo(size,p3.y); wctx.stroke();
+  }
+
+  wctx.strokeStyle = 'rgba(255,80,90,0.28)';
+  wctx.setLineDash([6,5]);
+  wctx.lineWidth = 1.5;
+  const b1 = toPx(vec(-0.95,0.95), size), b2 = toPx(vec(0.95,-0.95), size);
+  wctx.strokeRect(b1.x, b1.y, b2.x-b1.x, b2.y-b1.y);
+  wctx.setLineDash([]);
+
+  const homePx = toPx(st.home_pos, size);
+  const scale = size/2;
+  wctx.fillStyle = 'rgba(79,143,255,0.06)';
+  wctx.beginPath(); wctx.arc(homePx.x, homePx.y, 0.30*scale, 0, Math.PI*2); wctx.fill();
+  wctx.fillStyle = 'rgba(79,143,255,0.14)';
+  wctx.beginPath(); wctx.arc(homePx.x, homePx.y, 0.25*scale, 0, Math.PI*2); wctx.fill();
+
+  const perc = P.PRED_PERCEPTION_RADIUS*scale;
+  const predPx = toPx(st.pred_pos, size);
+  wctx.strokeStyle = `rgba(255,162,61,${0.10+0.25*st.alertN4})`;
+  wctx.lineWidth = 1.5;
+  wctx.beginPath(); wctx.arc(predPx.x, predPx.y, perc, 0, Math.PI*2); wctx.stroke();
+
+  const nestPx0 = toPx(vec(st.nest_pos.x-st.nest_size/2, st.nest_pos.y+st.nest_size/2), size);
+  const cellPx = st.nest_size/st.nest_cells*scale;
+  wctx.strokeStyle = 'rgba(242,201,76,0.55)';
+  wctx.lineWidth = 1.5;
+  wctx.strokeRect(nestPx0.x, nestPx0.y, cellPx*st.nest_cells, cellPx*st.nest_cells);
+  const filled = Math.min(Math.floor(st.total_deposited), st.max_materials);
+  let cellIdx=0;
+  for(let row=0; row<st.nest_cells; row++){
+    for(let col=0; col<st.nest_cells; col++){
+      wctx.strokeStyle = 'rgba(242,201,76,0.25)';
+      wctx.strokeRect(nestPx0.x+col*cellPx, nestPx0.y+row*cellPx, cellPx, cellPx);
+      if(cellIdx < filled){
+        wctx.fillStyle = 'rgba(242,201,76,0.55)';
+        wctx.fillRect(nestPx0.x+col*cellPx+1, nestPx0.y+row*cellPx+1, cellPx-2, cellPx-2);
+      }
+      cellIdx++;
+    }
+  }
+
+  if(st.trail.length>1){
+    wctx.beginPath();
+    for(let i=0;i<st.trail.length;i++){
+      const tp = toPx(st.trail[i], size);
+      if(i===0) wctx.moveTo(tp.x,tp.y); else wctx.lineTo(tp.x,tp.y);
+    }
+    wctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    wctx.lineWidth = 2;
+    wctx.stroke();
+  }
+
+  const foodPx = toPx(st.food_pos, size);
+  drawStar(wctx, foodPx.x, foodPx.y, 9, '#FF4557');
+
+  wctx.fillStyle = '#4F8FFF';
+  wctx.shadowColor = '#4F8FFF'; wctx.shadowBlur = 10;
+  wctx.beginPath(); wctx.arc(homePx.x,homePx.y,7,0,Math.PI*2); wctx.fill();
+  wctx.shadowBlur = 0;
+
+  const predGlow = 8 + 6*st.alertN4;
+  wctx.fillStyle = '#63E86B';
+  wctx.shadowColor = '#63E86B'; wctx.shadowBlur = predGlow;
+  wctx.beginPath(); wctx.arc(predPx.x,predPx.y,8,0,Math.PI*2); wctx.fill();
+  wctx.shadowBlur = 0;
+
+  if(st.material_active){
+    const mp = toPx(st.material_pos, size);
+    wctx.fillStyle = '#F2C94C';
+    wctx.shadowColor = '#F2C94C'; wctx.shadowBlur = 8;
+    wctx.beginPath(); wctx.ellipse(mp.x, mp.y, 7, 4.5, 0, 0, Math.PI*2); wctx.fill();
+    wctx.shadowBlur = 0;
+  }
+
+  const agentPx = toPx(st.pos, size);
+  const hx = st.pos.x + 0.12*Math.cos(st.theta), hy = st.pos.y + 0.12*Math.sin(st.theta);
+  const headPx = toPx(vec(hx,hy), size);
+  let agentColor = '#FFFFFF';
+  if(st.motorN4>0.28) agentColor = '#FFA23D'; else if(st.restIntensity>0.5) agentColor = '#8FE07A';
+  wctx.strokeStyle = agentColor; wctx.lineWidth = 2.5;
+  wctx.beginPath(); wctx.moveTo(agentPx.x,agentPx.y); wctx.lineTo(headPx.x,headPx.y); wctx.stroke();
+  wctx.fillStyle = '#FFFFFF';
+  wctx.shadowColor = agentColor; wctx.shadowBlur = 9;
+  wctx.beginPath(); wctx.arc(agentPx.x,agentPx.y,6,0,Math.PI*2); wctx.fill();
+  wctx.shadowBlur = 0;
+
+  for(const f of st.flashes){
+    const fp = toPx(vec(f.x,f.y), size);
+    const prog = f.t/f.ttl;
+    wctx.globalAlpha = 1-prog;
+    wctx.strokeStyle = f.color; wctx.lineWidth = 2.5;
+    wctx.beginPath(); wctx.arc(fp.x, fp.y, (f.kind==='burst'?46:22)*prog + 4, 0, Math.PI*2); wctx.stroke();
+    wctx.globalAlpha = 1;
+  }
+}
+function drawStar(ctx,cx,cy,r,color){
+  ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 9;
+  ctx.beginPath();
+  for(let i=0;i<10;i++){
+    const rad = i%2===0? r : r*0.45;
+    const a = -Math.PI/2 + i*Math.PI/5;
+    const px = cx+rad*Math.cos(a), py = cy+rad*Math.sin(a);
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  }
+  ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
+}
+
+function drawCortex(){
+  const st = S;
+  const size = cortexCanvas.width;
+  const cell = size/21;
+  const vmax = st.brainVmax || 0.8;
+  cctx.fillStyle = '#03050a';
+  cctx.fillRect(0,0,size,size);
+  for(let r=0;r<21;r++){
+    for(let c=0;c<21;c++){
+      const val = st.brain[brainIdx(r,c)]/vmax;
+      cctx.fillStyle = infernoColor(val);
+      cctx.fillRect(c*cell, r*cell, cell+0.5, cell+0.5);
+    }
+  }
+}
+
+function drawDial(ctx, activity, color, size){
+  ctx.clearRect(0,0,size,size);
+  ctx.fillStyle = 'rgba(255,255,255,0.015)';
+  ctx.fillRect(0,0,size,size);
+  const cx=size/2, cy=size/2, R=size*0.42;
+  let maxA = 0;
+  for(let i=0;i<N;i++) if(activity[i]>maxA) maxA=activity[i];
+  if(maxA<=0) maxA=1/N;
+
+  ctx.strokeStyle = 'rgba(148,178,209,0.12)';
+  ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,R*0.5,0,Math.PI*2); ctx.stroke();
+
+  for(let i=0;i<N;i++){
+    const a = ANGLES[i];
+    const len = R*(activity[i]/maxA);
+    const x2 = cx+len*Math.cos(a), y2 = cy+len*Math.sin(a);
+    ctx.strokeStyle = color; ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x2,y2); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  let mx=0,my=0;
+  for(let i=0;i<N;i++){ mx+=activity[i]*Math.cos(ANGLES[i]); my+=activity[i]*Math.sin(ANGLES[i]); }
+  const m = Math.hypot(mx,my);
+  if(m>0.001){
+    const ux=mx/m, uy=my/m;
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+ux*R*0.92, cy+uy*R*0.92); ctx.stroke();
+  }
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(cx,cy,3,0,Math.PI*2); ctx.fill();
+}
+
+function drawAlertChart(){
+  const st = S;
+  const w = alertChart.width, h = alertChart.height;
+  actx.clearRect(0,0,w,h);
+  actx.fillStyle = 'rgba(255,255,255,0.02)';
+  actx.fillRect(0,0,w,h);
+  actx.strokeStyle = 'rgba(148,178,209,0.15)';
+  actx.lineWidth = 1;
+  for(let gy=0; gy<=1; gy+=0.5){
+    const y = h - gy*h;
+    actx.beginPath(); actx.moveTo(0,y); actx.lineTo(w,y); actx.stroke();
+  }
+  function plot(arr, color, fill){
+    actx.beginPath();
+    for(let i=0;i<arr.length;i++){
+      const x = i/(arr.length-1)*w;
+      const y = h - arr[i]*h;
+      if(i===0) actx.moveTo(x,y); else actx.lineTo(x,y);
+    }
+    if(fill){
+      actx.lineTo(w,h); actx.lineTo(0,h); actx.closePath();
+      actx.fillStyle = color.fillStyle; actx.fill();
+    } else {
+      actx.strokeStyle = color; actx.lineWidth = 2; actx.stroke();
+    }
+  }
+  plot(st.historyPerc, {fillStyle:'rgba(69,211,232,0.13)'}, true);
+  plot(st.historyPerc, '#45D3E8', false);
+  plot(st.historyAlert, '#FFA23D', false);
+}
+
+// ============================================================
+// TELEMETRÍA DOM
+// ============================================================
+const el = id => document.getElementById(id);
+function setBar(barId, valId, value, digits){
+  el(barId).style.width = (clip(value,0,1)*100).toFixed(1)+'%';
+  el(valId).textContent = value.toFixed(digits===undefined?2:digits);
+}
+
+function statusOf(st){
+  if(st.nest_completed) return {text:'NIDO COMPLETADO', color:'#F2C94C'};
+  if(st.motorN4>0.30) return {text:'HUYENDO — N+4 ACTIVA', color:'#FFA23D'};
+  if(st.restIntensity>0.55) return {text:'DESCANSANDO EN CASA', color:'#4F8FFF'};
+  if(st.motorN2>0.30) return {text:'CONSTRUYENDO NIDO', color:'#8FE07A'};
+  if(st.material_active && norm(sub(st.pos,st.material_pos))<0.3) return {text:'RECOLECTANDO MATERIAL', color:'#F2C94C'};
+  return {text:'EXPLORANDO', color:'#45D3E8'};
+}
+
+function updateTelemetry(){
+  const st = S;
+  el('frameCount').textContent = st.frame;
+  el('trialCount').textContent = st.stats.trials+1;
+
+  setBar('b_hunger','v_hunger', st.hunger);
+  setBar('b_safety','v_safety', st.safety);
+  setBar('b_border','v_border', st.borderStress);
+  setBar('b_load','v_load', st.L);
+  setBar('b_impulse','v_impulse', st.build_impulse);
+  el('v_nest').textContent = st.nest_completed ? 'COMPLETO' : (Math.min(Math.floor(st.total_deposited), st.max_materials))+'/'+st.max_materials;
+  el('v_instinct').textContent = st.build_instinct.toFixed(2);
+
+  setBar('b_alert','v_alert', st.alertN4);
+  const dist_pred = norm(sub(st.pos, st.pred_pos));
+  const showGhost = st.alertN4 > 0.06 && dist_pred > P.PRED_PERCEPTION_RADIUS;
+  el('ghostBadge').style.display = showGhost ? 'inline-flex' : 'none';
+
+  const status = statusOf(st);
+  const badge = el('statusBadge');
+  el('statusBadgeText').textContent = status.text;
+  badge.style.background = status.color+'22';
+  badge.style.borderColor = status.color+'55';
+  badge.style.color = status.color;
+  badge.querySelector('.pulse-dot').style.background = status.color;
+
+  el('stat_trials').textContent = st.stats.trials + (st.stats.trials>0?'':'');
+  const totalDone = st.stats.completions+st.stats.captures;
+  el('stat_completion').textContent = totalDone>0 ? Math.round(100*st.stats.completions/totalDone)+'%' : '—';
+  el('stat_captures').textContent = st.stats.captures;
+
+  drawDial(dials.mot, st.activity_mot, '#FF5C7A', 160);
+  drawDial(dials.nav, st.activity_nav, '#45D3E8', 160);
+  drawDial(dials.n2, st.activity_n2, '#8FE07A', 160);
+  drawDial(dials.n4, st.activity_n4, '#FFA23D', 160);
+}
+
+// ============================================================
+// CONTROLES
+// ============================================================
+let running = true;
+el('btnPlayPause').addEventListener('click', ()=>{
+  running = !running;
+  el('btnPlayPause').textContent = running ? '⏸ Pausar' : '▶ Reanudar';
+  el('btnPlayPause').classList.toggle('primary', running);
+});
+el('btnReset').addEventListener('click', ()=>{ resetSystem('manual'); });
+el('btnResetZone').addEventListener('click', ()=>{ S.spawnCenter = vec(0.75,-0.75); S.spawnRadius = 0.20; });
+
+worldCanvas.addEventListener('click', (e)=>{
+  const rect = worldCanvas.getBoundingClientRect();
+  const px = (e.clientX-rect.left)/rect.width * worldCanvas.width;
+  const py = (e.clientY-rect.top)/rect.height * worldCanvas.height;
+  const wx = px/worldCanvas.width*2-1;
+  const wy = 1-py/worldCanvas.height*2;
+  S.spawnCenter = vec(clip(wx,-0.9,0.9), clip(wy,-0.9,0.9));
+  addFlash(S, wx, wy, '#5EEAD4', 'burst');
+});
+
+function bindSlider(sliderId, labelId, target, key, fmt, onSet){
+  const s = el(sliderId);
+  s.addEventListener('input', ()=>{
+    const v = parseFloat(s.value);
+    if(onSet) onSet(v); else target[key]=v;
+    el(labelId).textContent = fmt(v);
+  });
+}
+bindSlider('p_tau','v_tau', P, 'TAU_N4', v=>v.toFixed(0));
+bindSlider('p_krise','v_krise', P, 'ALERT_RISE_RATE', v=>v.toFixed(2));
+bindSlider('p_rperc','v_rperc', P, 'PRED_PERCEPTION_RADIUS', v=>v.toFixed(2));
+bindSlider('p_alphaH','v_alphaH', P, 'alphaH', v=>v.toFixed(4));
+bindSlider('p_betaS','v_betaS', P, 'betaS', v=>v.toFixed(4));
+bindSlider('p_speed','v_speed', P, 'speed', v=>v.toFixed(2)+'×');
+bindSlider('gainMot','v_gainMot', P, 'gainMot', v=>v.toFixed(2));
+bindSlider('gainNav','v_gainNav', P, 'gainNav', v=>v.toFixed(2));
+bindSlider('gainN2','v_gainN2', P, 'gainN2', v=>v.toFixed(2));
+bindSlider('gainN4','v_gainN4', P, 'gainN4', v=>v.toFixed(2));
+
+document.querySelectorAll('.ablation-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const tau = parseFloat(btn.dataset.tau);
+    P.TAU_N4 = tau;
+    el('p_tau').value = tau;
+    el('v_tau').textContent = tau.toFixed(0);
+    document.querySelectorAll('.ablation-btn').forEach(b=>b.classList.remove('primary'));
+    btn.classList.add('primary');
+  });
+});
+
+// ============================================================
+// BUCLE PRINCIPAL
+// ============================================================
+S = freshState();
+spawnMaterial(S);
+
+let lastT = performance.now();
+function loop(now){
+  const realDt = Math.min((now-lastT)/16.6667, 4);
+  lastT = now;
+  if(running){
+    step(P.speed*realDt);
+  }
+  drawWorld();
+  drawCortex();
+  drawAlertChart();
+  updateTelemetry();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
